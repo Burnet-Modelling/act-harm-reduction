@@ -1,7 +1,7 @@
 """
 This script does the plotting.
 """
-from utils import get_onedrive_data_folder, get_desktop_folder, save_safely
+from utils import get_desktop_folder, save_safely
 import os
 import sciris as sc
 import pandas as pd
@@ -10,7 +10,6 @@ from copy import deepcopy as dcp
 from matplotlib import pyplot as plt
 from constants import *
 
-onedrive_data_folder = get_onedrive_data_folder()
 desktop_folder = get_desktop_folder()
 
 # Plotting parameters
@@ -82,6 +81,10 @@ def plot_outcomes(data, filename, save_folder=desktop_folder, best_estimate=True
     df['nodekey'] = pd.Categorical(df['nodekey'], categories=plot_nodes, ordered=True)
     df = df.sort_values(['nodekey']).reset_index(drop=True)
 
+    if is_diff:
+        df['value'] = df.groupby(['scen_name', 'outcome_cat'])['value'].transform(
+            lambda g: g if (g != 0).any() else np.nan
+        )
 
     df['node_long'] = pd.Categorical(df['node_long'], ordered=True, categories=df['node_long'].unique())
     df['scen_long'] = pd.Categorical(df['scen_long'], ordered=True, categories=scen_long_categories)
@@ -167,8 +170,14 @@ def plot_outcomes_aggregated(data, filename, save_folder=desktop_folder, best_es
     # Plot relevant outcomes
     df = df.loc[(df['outcome'] == 'yes') | ((df['nodekey'] == 'bbv_treat') & (df['outcome'] == 'treat'))].drop('outcome', axis=1)
 
-    df['node_long'] = df['outcome_cat']  # aggregate nodes
-    df = df.loc[df['node_long'] != 'none']
+    if is_diff:
+        df['value'] = df.groupby(['scen_name', 'outcome_cat'])['value'].transform(
+            lambda g: g if (g != 0).any() else np.nan
+        )
+
+    # df['node_long'] = df['outcome_cat']  # aggregate nodes
+    df['node_long'] = df['outcome_cat'].map(OUTCOME_CAT_LABELS)  # aggregate nodes
+    df = df.loc[(df['node_long'] != 'none') & (df['node_long'].notnull())]
     df = df.drop(['nodekey', 'cost_cat', 'cost', 'dag_name'], axis=1)
     df = df.groupby([col for col in df.columns if col != 'value'], sort=False, dropna=False)['value'].sum().reset_index()
 
@@ -302,6 +311,7 @@ def plot_costs_categorised(data, filename, save_folder=desktop_folder, best_esti
     df = df.groupby(['scen_name', 'estimate', 'cost_cat', 'scen_long'], sort=False)['cost'].sum().reset_index()
 
     df['scen_long'] = pd.Categorical(df['scen_long'], ordered=True, categories=df['scen_long'].unique())
+    df['cost_cat_label'] = df['cost_cat'].map(COST_CAT_LABELS)
 
     # Split data
     if best_estimate:
@@ -317,8 +327,8 @@ def plot_costs_categorised(data, filename, save_folder=desktop_folder, best_esti
     g = sns.catplot(
         data=df_error, x='scen_long', y='cost',
         hue='scen_long',
-        col='cost_cat',
-        col_order=COST_CAT_LEVELS,
+        col='cost_cat_label',
+        col_order=COST_CAT_LABELS.values(),
         col_wrap=3,
         kind=plot_kind,
         errorbar=('pi', 95),
@@ -328,7 +338,7 @@ def plot_costs_categorised(data, filename, save_folder=desktop_folder, best_esti
         legend=True,
         alpha=0.5 if DIAG_PLOTS else 0,
     )
-    for i, node_long in enumerate(COST_CAT_LEVELS):
+    for i, node_long in enumerate(COST_CAT_LABELS.keys()):
         if not DIAG_PLOTS:
             sns.barplot(
                 data=df_best[df_best['cost_cat'] == node_long],  # select the relevant data subset
@@ -507,7 +517,7 @@ def plot_costs_stacked(data, save_folder=desktop_folder):
     plt.savefig(filepath)
     print('Saved:', filepath)
 
-def main_plotting(P, show_plots=False, sens_plot_kind=SENS_PLOT_KIND, save_folder=desktop_folder):
+def main_plotting(P, show_plots=False, sens_plot_kind=SENS_PLOT_KIND, image_type='png', save_folder=desktop_folder):
     if not show_plots: plt.switch_backend('agg')
 
     df = prepare_df_for_plotting(P.results)
@@ -517,31 +527,31 @@ def main_plotting(P, show_plots=False, sens_plot_kind=SENS_PLOT_KIND, save_folde
 
     options = dict(sens_plot_kind=sens_plot_kind, save_folder=save_folder)
 
-    plot_outcomes(df, filename=f'fig_outcomes_{TODAY_STR}.png', same_axes=False, **options)
-    plot_outcomes(df, filename=f'fig_outcomes_sens_{TODAY_STR}.png', same_axes=False, best_estimate=False, **options)
-    plot_outcomes(df_diff, filename=f'fig_outcomes_sens_diff_{TODAY_STR}.png', same_axes=False, best_estimate=False,
+    plot_outcomes(df, filename=f'fig_outcomes_{TODAY_STR}.{image_type}', same_axes=False, **options)
+    plot_outcomes(df, filename=f'fig_outcomes_sens_{TODAY_STR}.{image_type}', same_axes=False, best_estimate=False, **options)
+    plot_outcomes(df_diff, filename=f'fig_outcomes_sens_diff_{TODAY_STR}.{image_type}', same_axes=False, best_estimate=False,
                   is_diff=True, **options)
 
-    plot_outcomes_aggregated(df, filename=f'fig_outcomes_agg_{TODAY_STR}.png', same_axes=False, **options)
-    plot_outcomes_aggregated(df_diff, filename=f'fig_outcomes_agg_diff_{TODAY_STR}.png', same_axes=False, is_diff=True, **options)
-    plot_outcomes_aggregated(df, filename=f'fig_outcomes_agg_sens_{TODAY_STR}.png', same_axes=False,
+    plot_outcomes_aggregated(df, filename=f'fig_outcomes_agg_{TODAY_STR}.{image_type}', same_axes=False, **options)
+    plot_outcomes_aggregated(df_diff, filename=f'fig_outcomes_agg_diff_{TODAY_STR}.{image_type}', same_axes=False, is_diff=True, **options)
+    plot_outcomes_aggregated(df, filename=f'fig_outcomes_agg_sens_{TODAY_STR}.{image_type}', same_axes=False,
                              best_estimate=False, **options)
-    plot_outcomes_aggregated(df_diff, filename=f'fig_outcomes_agg_sens_diff_{TODAY_STR}.png', same_axes=False,
+    plot_outcomes_aggregated(df_diff, filename=f'fig_outcomes_agg_sens_diff_{TODAY_STR}.{image_type}', same_axes=False,
                              best_estimate=False, is_diff=True, **options)
 
     # plot_costs_best(df)
-    plot_costs_categorised(df, filename=f'fig_costs_same_axes_{TODAY_STR}.png', same_axes=True, **options)
-    plot_costs_categorised(df, filename=f'fig_costs_diff_axes_{TODAY_STR}.png', same_axes=False, **options)
-    plot_costs_categorised(df_diff, filename=f'fig_costs_additional_same_axes_{TODAY_STR}.png', same_axes=True, is_diff=True, **options)
-    plot_costs_categorised(df_diff, filename=f'fig_costs_additional_diff_axes_{TODAY_STR}.png', same_axes=False, is_diff=True, **options)
+    plot_costs_categorised(df, filename=f'fig_costs_same_axes_{TODAY_STR}.{image_type}', same_axes=True, **options)
+    plot_costs_categorised(df, filename=f'fig_costs_diff_axes_{TODAY_STR}.{image_type}', same_axes=False, **options)
+    plot_costs_categorised(df_diff, filename=f'fig_costs_additional_same_axes_{TODAY_STR}.{image_type}', same_axes=True, is_diff=True, **options)
+    plot_costs_categorised(df_diff, filename=f'fig_costs_additional_diff_axes_{TODAY_STR}.{image_type}', same_axes=False, is_diff=True, **options)
     # # plot_costs_stacked(df)
 
-    plot_costs_categorised(df, filename=f'fig_costs_sens_same_axes_{TODAY_STR}.png', same_axes=True, best_estimate=False, **options)
-    plot_costs_categorised(df, filename=f'fig_costs_sens_diff_axes_{TODAY_STR}.png', same_axes=False, best_estimate=False, **options)
-    plot_costs_categorised(df_diff, filename=f'fig_costs_sens_additional_same_axes_{TODAY_STR}.png', best_estimate=False, same_axes=True, is_diff=True, **options)
-    plot_costs_categorised(df_diff, filename=f'fig_costs_sens_additional_diff_axes_{TODAY_STR}.png', best_estimate=False, same_axes=False, is_diff=True, **options)
+    plot_costs_categorised(df, filename=f'fig_costs_sens_same_axes_{TODAY_STR}.{image_type}', same_axes=True, best_estimate=False, **options)
+    plot_costs_categorised(df, filename=f'fig_costs_sens_diff_axes_{TODAY_STR}.{image_type}', same_axes=False, best_estimate=False, **options)
+    plot_costs_categorised(df_diff, filename=f'fig_costs_sens_additional_same_axes_{TODAY_STR}.{image_type}', best_estimate=False, same_axes=True, is_diff=True, **options)
+    plot_costs_categorised(df_diff, filename=f'fig_costs_sens_additional_diff_axes_{TODAY_STR}.{image_type}', best_estimate=False, same_axes=False, is_diff=True, **options)
 
-    plot_costs_categorised_stacked(df, filename=f'fig_costs_intervent_stacked_{TODAY_STR}.png', same_axes=False, **options)
+    plot_costs_categorised_stacked(df, filename=f'fig_costs_intervent_stacked_{TODAY_STR}.{image_type}', same_axes=False, **options)
 
     if show_plots: plt.show()
 
@@ -556,7 +566,8 @@ if __name__ == '__main__':
 
     save_folder = os.path.dirname(proj_file) + f'/Plots_{TIME_STR}/'  # Save plots into subfolder near proj_file
 
-    main_plotting(P, show_plots=show_plots, save_folder=save_folder)
+    main_plotting(P, show_plots=show_plots, save_folder=save_folder, image_type='png')
+    main_plotting(P, show_plots=show_plots, save_folder=save_folder, image_type='pdf')
 
     print('Done')
 

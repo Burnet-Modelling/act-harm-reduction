@@ -27,4 +27,16 @@ PLOT_NODES = [
     'irid', 'irid_hospital',
     'bbv_inci', 'bbv_treat',
 ]
-COST_CAT_LEVELS = ['Intervention', 'Social', 'Emergency', 'IRID', 'Hepatitis C']
+
+COST_CAT_LABELS = {'Intervention': 'Intervention',
+                   'Social': 'Societal cost of years of life lost',
+                   'Emergency': 'Emergency response',
+                   'IRID': 'Hospitalised treatment of IRI',
+                   'Hepatitis C': 'Hepatitis C treatment'}
+
+OUTCOME_CAT_LABELS = {'Opioid overdose': 'Opioid overdose',
+                      'Emergency response': 'Emergency response',
+                      'Death': 'Overdose-related death',
+                      'Non-opioid overdose': 'Non-opioid overdose',
+                      'IRID incidence': 'IRI incidence',
+                      'Hepatitis C incidence': 'Hepatitis C incidence'}

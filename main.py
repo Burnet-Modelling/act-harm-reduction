@@ -2,7 +2,7 @@
 This script runs the Bayesian Network model.
 """
 from graph import Project
-from utils import get_onedrive_data_folder, get_desktop_folder, TODAY_STR, save_safely, TIME_STR
+from utils import get_desktop_folder, TODAY_STR, save_safely, TIME_STR
 from plotting import main_plotting
 import warnings
 import sciris as sc
@@ -10,15 +10,15 @@ import os
 import shutil
 warnings.filterwarnings("ignore", message="Probability values don't exactly sum to 1")
 
-onedrive_data_folder = get_onedrive_data_folder()
+data_folder = os.path.dirname(os.path.realpath(__file__))
 desktop_folder = get_desktop_folder()
 
 n_samples = 100
 seed = 0
 
-model_file = "model_info_*.xlsx"            # model_info_20241206.xlsx
-databook_file = "Databook/databook_*standard*cost.xlsx"           # standard.xlsx
-# databook_file = "Databook/databook_* market change *.xlsx"  # market change.xlsx
+model_file = "model_info_*.xlsx"
+databook_file = "databook_*standard*.xlsx"           # standard databook
+# databook_file = "databook_* market change *.xlsx"  # market change databook
 
 if __name__ == '__main__':
     this_folder = os.path.join(desktop_folder, f'Results_{TODAY_STR}_{TIME_STR}')
@@ -27,8 +27,8 @@ if __name__ == '__main__':
 
     P = Project()  # Create project
 
-    latest_model_file    = sc.glob(folder=onedrive_data_folder, pattern=model_file)[-1]  # -1 is last file sorted by name
-    latest_databook_file = sc.glob(folder=onedrive_data_folder, pattern=databook_file)[-1]  # -1 is last file sorted by name
+    latest_model_file    = sc.glob(folder=data_folder, pattern=model_file)[-1]  # -1 is last file sorted by name
+    latest_databook_file = sc.glob(folder=data_folder, pattern=databook_file)[-1]  # -1 is last file sorted by name
 
     # Save run info
     run_info = sc.gitinfo()

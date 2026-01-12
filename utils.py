@@ -22,30 +22,6 @@ DASHDOT_BORDER = styles.Side(border_style='dashDot')
 DASHED_BORDER = styles.Side(border_style='dashed')
 
 
-def get_onedrive_data_folder():
-    """Return the basic ACT HR data folder for any user.
-    Repurposed function from Optima package.
-    """
-    # Start with the default location
-    user = getuser()          # The user logged in
-    computer = gethostname()  # The name of the computer
-    platform = system()       # Windows, Linux or Darwin (MacOS)
-
-    # Start with the default for the system
-    if platform == 'Windows':
-        onedrive_data_folder = f'C:\\Users\\{user}\\Burnet Institute\\WG-Modelling - Documents\\Other projects\\ACT harm reduction\\Working files\\'
-    elif platform == 'Darwin':
-        onedrive_data_folder = f"/Users/{user}/Library/CloudStorage/OneDrive-BurnetInstitute/Documents - WG-Modelling/Other projects/ACT harm reduction/Working files/"
-    else:  # Linux or something else? - We have to specify
-        onedrive_data_folder = ''
-
-    if not path.isdir(onedrive_data_folder):  # it isn't the same for this user, check if there's a customized overwrite
-        raise Exception(
-            f'Error: data folder not found. Please add user information for user "{user}" computer "{computer}" platform "{platform}" to utils.py for future convenience')
-
-    return onedrive_data_folder
-
-
 def get_desktop_folder(subfolder='ACT HR script output'):
     """
     Gets the system specific Desktop folder and appends the subfolder to the path.
@@ -356,14 +332,14 @@ def read_excel_safely(filename, *args, _read_func=None, _create_tmp_copy=True, *
 
 def list_vals(series):
     data = series.values
-    with np.printoptions(legacy='1.25'):
+    with np.printoptions(legacy='1.21'):
         str_joined_list = str(list(data))[1:-1]
     return str_joined_list
 
 
 def list_vals_sorted(series):
     data = sorted(series.values)
-    with np.printoptions(legacy='1.25'):
+    with np.printoptions(legacy='1.21'):
         str_joined_list = str(list(data))[1:-1]
     return str_joined_list
 
@@ -448,7 +424,7 @@ def list_outliers(series, m=1.5):
     data = series.values
     lb, ub = series_outlier_cutoffs(series, m=m)
     out = data[np.logical_or(data < lb, data > ub)]
-    with np.printoptions(legacy='1.25'):
+    with np.printoptions(legacy='1.21'):
         str_joined_outliers = str(list(out))[1:-1]
     return str_joined_outliers
 
