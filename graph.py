@@ -5,7 +5,7 @@ import graphlib
 import itertools
 
 from pgmpy.inference import VariableElimination, ApproxInference
-from pgmpy.models import BayesianNetwork
+from pgmpy.models import DiscreteBayesianNetwork
 
 import logging
 logging.disable(logging.CRITICAL)
@@ -787,7 +787,7 @@ class DAG(graphlib.TopologicalSorter):
     def initialise_bayes_net(self):
         """Creates pgmpy.BayesianNetwork."""
         arc_list = [(arc['parent'], arc['child']) for arc in self.arcs]
-        self.bayes_net = BayesianNetwork(arc_list)
+        self.bayes_net = DiscreteBayesianNetwork(arc_list)
         cpds = []
         for node in self.nodes:
             cpd = node.to_cpd()  # Note not sampled (sample_method = 'best' so no seed needed)
@@ -877,7 +877,7 @@ class DAG(graphlib.TopologicalSorter):
         if seed is None and sample_method != 'best': raise Exception('Provide a seed (was None)')
 
         arc_list = [(arc['parent'], arc['child']) for arc in self.arcs]
-        bn_base = BayesianNetwork(arc_list)
+        bn_base = DiscreteBayesianNetwork(arc_list)
 
         cpds_sampled = [node.to_cpds_sample(n_samples=n_samples, sample_method='best' if 'int' in node.nodekey else sample_method, seed=seed) for node in self.nodes]
 
